@@ -7,76 +7,45 @@
  * Author: Votre nom (car c'est votre plugin)
  * Author URI: l'URI de votre site
  * License: La ou les license(s) relative(s) à votre plugin
+ * License: La ou les license(s) relative(s) à votre plugin
  */
-
-
-
-
-function affi_camp()
-{
-	//function install();
-	global $wpdb;
-	$wpdb = new PDO('mysql:host=localhost;dbname=bd_worldcup_wp', 'root', 'root');
-    $wpdb->exec("SET CHARACTER SET utf8");
-	$reponse = $wpdb->query("SELECT * FROM wp_options WHERE option_name = 'list_equipe'");
-	echo ('<table class="table table-striped">');
-	echo ('<thead><tr>');
-	echo ('<th>Joueur</th>');
-	echo ('<th>Equipe</th>');
-	echo ('<tr></thead>');
-    $donne = $reponse->fetch(PDO::FETCH_ASSOC);
-    $listEquipe = json_decode($donne['option_value'], true);
-    $sizeListEquipe = sizeof($listEquipe);
-    echo ('<tbody>');
-    for ($i = 0; $i < $sizeListEquipe; $i++) {
-        echo ('<tr><td>'.$listEquipe[$i]['playerName'].'</td><td>'.$listEquipe[$i]['playerTeam'].'</td>');
+function affi_camp() {
+    $wpdb = "";
+    require_once("connexion_bdd.php");
+    if($wpdb != "") {
+        $listEquipe = getPlayers($wpdb);
+        echo ('<table class="table table-striped">');
+        echo ('<thead><tr>');
+        echo ('<th>Joueur</th>');
+        echo ('<th>Equipe</th>');
+        echo ('<tr></thead>');
+        $sizeListEquipe = sizeof($listEquipe);
+        echo ('<tbody>');
+        for ($i = 0; $i < $sizeListEquipe; $i++) {
+            echo ('<tr><td>'.$listEquipe[$i]['playerName'].'</td><td>'.$listEquipe[$i]['playerTeam'].'</td>');
+        }
+        echo ('</tbody>');
+        echo ('</table>');
     }
-    echo ('</tbody>');
-	echo ('</table>');
 }
 
-function usecurl ($q, $camp)
-{
-	// Connection à la base de donnée
-	/*global $wpdb;
-	$wpdb = new PDO('mysql:host=localhost;dbname=bd_worldcup_wp', 'root', 'root');
-	//on regarde si la requete a deja etait rentrer une fois
-	$id_req = "";
-	$recup_id = $wpdb->query('SELECT `option_id` FROM `wp_options` WHERE option_name="'.$q.'"');
-	while ($donnees = $recup_id->fetch())
-	{
-		$id_req = $donnees['id'];
-	}
-	//si elle nn'a pas etait rentrer on l'insert et on recupere son id
-	if ($id_req == "")
-	{
-		$req1 = $wpdb->prepare('INSERT INTO wp_options (option_name, option_value) VALUES (:query_c, :libelle_c)');
-
-		$req1->execute(array(
-					'query_c' => $q,
-					'libelle_c' => $camp
-						));
-		
-	}*/
-	//si on a pas choisit parmit les campagne deja existante on rentre la nouvel campagne et recupere son id
-	/*if ($camp2 == "")
-	{
-		$req2 = $bdd->prepare('INSERT INTO campagne (date_campagne, libelle) VALUES (NOW(), :libelle_c)');
-		$req2->execute(array(
-					'libelle_c' => $camp
-					//'query_c' => $t
-					));
-		
-	}*/
-					
-							
-				
-	//mysql_close($sql_bdd);
-			
-		
-	
+function getPlayers($wpdb) {
+    $reponse = $wpdb->query("SELECT * FROM wp_options WHERE option_name = 'list_equipe'");
+    $donne = $reponse->fetch(PDO::FETCH_ASSOC);
+    return json_decode($donne['option_value'], true);
 }
 
+function insertNewPlayer ($player, $team) {
+    $wpdb = "";
+    require_once("connexion_bdd.php");
+    if($wpdb != "") {
+        $resultPlayer = getPlayers($wpdb);
+        $newPlayer = array("playerName" => $player, "playerTeam" => $team);
+        array_push($resultPlayer, $newPlayer);
+        $req1 = $wpdb->prepare("UPDATE wp_options SET option_value = :resultPlayer WHERE option_name = 'list_equipe'");
+        $req1->execute(array('resultPlayer' => json_encode($resultPlayer)));
+    }
+}
 
 function affi_campfront()
 {
@@ -91,78 +60,45 @@ function affi_campfront()
 	echo ('<th>Action</th>');
 
 	echo ('<tr>');
-	while ($donne = $reponse->fetch())
-		{
-			echo ('<tr><td>'.$donne['option_name'].'</a></td><td>'.$donne['option_value'].'</td>');
-			echo('<td><form method="post" action="options-general.php?page=my-unique-identifier?id='.$donne['option_id'].'" class="form-stacked"><input type="hidden" name="id_req_camp" value="'.$donne["id"].'" />
-			<input class="btn btn-danger" type="submit" name="delete" value="supprimer"></form></td></tr>');
-			
-		}
+	while ($donne = $reponse->fetch()) {
+        echo ('<tr><td>'.$donne['option_name'].'</a></td><td>'.$donne['option_value'].'</td>');
+        echo('<td><form method="post" action="options-general.php?page=my-unique-identifier?id='.$donne['option_id'].'" class="form-stacked"><input type="hidden" name="id_req_camp" value="'.$donne["id"].'" />
+        <input class="btn btn-danger" type="submit" name="delete" value="supprimer"></form></td></tr>');
+	}
 	echo ('</table>');
 }
 
+add_action( 'admin_menu', 'my_plugin_menu' );
 
+function my_plugin_menu() {
+    add_options_page( 'My Plugin Options', 'Gestion liste', 'manage_options', 'my-unique-identifier', 'my_plugin_options' );
+}
 
-
-
-
- /** Step 2 (from text above).  */
- add_action( 'admin_menu', 'my_plugin_menu' );
-
- /** Step 1. */
- function my_plugin_menu() {
-	 add_options_page( 'My Plugin Options', 'Gestion liste', 'manage_options', 'my-unique-identifier', 'my_plugin_options' );
- }
-
- /** Step 3. */
- function my_plugin_options() {
-	 if ( !current_user_can( 'manage_options' ) ) {
-		 wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
-	 }
-	 global $wpdb;
-	$wpdb = new PDO('mysql:host=localhost;dbname=bd_worldcup_wp', 'root', 'root');
-				//<!-- On test si l'utilisateur a cliqué sur le bouton -->
-				if (isset($_POST['ok'], $_POST['q'])) 
-				{	
-	 echo '<div class="wrap">';
-	 echo '<p>Here is where the form would go if I actually had options.</p>';
-	 echo  '<form method="post" action="">';
-	echo'<fieldset>';
-     echo '<label for="label">Query</label>';
-	echo 	'<div class="clearfix"><div class="input"><input class="span8" type="text" name="q" value=""/></div></div>';
-	echo 	'<label for="label">Nom de la nouvelle campagne</label>';
-	echo 	'<div class="clearfix"><div class="input"><input class="span8" type="text" name="camp" value=""/></div></div>';						
-	echo 	'<br/>';
-	echo 	'<div class="clearfix"><div class="input"><input class="btn btn-primary" type="submit" name="ok" value="Lancer loutil"></div></div>';
-	echo 	'</fieldset>';
-	echo ('<h3>liste de joueur</h3>');
-			affi_campfront();
-	 echo '</form>';
-	 echo '</div>';
-
-	 usecurl(htmlspecialchars($_POST['q']),$_POST['camp']);
+function my_plugin_options() {
+    if ( !current_user_can( 'manage_options' ) ) {
+        wp_die( __( 'You do not have sufficient permissions to access this page.' ));
+    }
+    global $wpdb;
+    $wpdb = new PDO('mysql:host=localhost;dbname=bd_worldcup_wp', 'root', 'root');
+    if (isset($_POST['btnInsertPlayer'], $_POST['player'], $_POST['team'])) {
+        insertNewPlayer(htmlspecialchars($_POST['player']),htmlspecialchars($_POST['team']));
 	}
-	else
-				{
-
-					echo '<div class="wrap">';
-	 echo '<p>Here is where the form would go if I actually had options.</p>';
-	 echo  '<form method="post" action="">';
-	echo'<fieldset>';
-     echo '<label for="label">Query</label>';
-	echo 	'<div class="clearfix"><div class="input"><input class="span8" type="text" name="q" value=""/></div></div>';
-	echo 	'<label for="label">Nom de la nouvelle campagne</label>';
-	echo 	'<div class="clearfix"><div class="input"><input class="span8" type="text" name="camp" value=""/></div></div>';						
-	echo 	'<br/>';
-	echo 	'<div class="clearfix"><div class="input"><input class="btn btn-primary" type="submit" name="ok" value="Lancer loutil"></div></div>';
-	echo 	'</fieldset>';
-	echo ('<h3>liste de joueur</h3>');
-			affi_campfront();
-	 echo '</form>';
-	 echo '</div>';
-
-				}
- }
+    echo '<div class="wrap">';
+    echo '<p>Here is where the form would go if I actually had options.</p>';
+    echo  '<form method="post" action="">';
+    echo'<fieldset>';
+    echo '<label for="label">Joueur</label>';
+    echo 	'<div class="clearfix"><div class="input"><input class="span8" type="text" name="player" value=""/></div></div>';
+    echo 	'<label for="label">Equipe</label>';
+    echo 	'<div class="clearfix"><div class="input"><input class="span8" type="text" name="team" value=""/></div></div>';
+    echo 	'<br/>';
+    echo 	'<div class="clearfix"><div class="input"><input class="btn btn-primary" type="submit" name="btnInsertPlayer" value="Ajouter"></div></div>';
+    echo 	'</fieldset>';
+    echo '</form>';
+    echo ('<h3>liste de joueur</h3>');
+    affi_camp();
+    echo '</div>';
+}
  
  
 
