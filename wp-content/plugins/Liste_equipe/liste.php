@@ -40,6 +40,9 @@ function insertNewPlayer ($player, $team) {
     require_once("connexion_bdd.php");
     if($wpdb != "") {
         $resultPlayer = getPlayers($wpdb);
+        if(empty($resultPlayer)) {
+            $resultPlayer= array();
+        }
         $newPlayer = array("playerName" => $player, "playerTeam" => $team);
         array_push($resultPlayer, $newPlayer);
         $req1 = $wpdb->prepare("UPDATE wp_options SET option_value = :resultPlayer WHERE option_name = 'list_equipe'");
