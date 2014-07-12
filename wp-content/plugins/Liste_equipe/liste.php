@@ -17,23 +17,28 @@ function affi_camp()
 	//function install();
 	global $wpdb;
 	$wpdb = new PDO('mysql:host=localhost;dbname=bd_worldcup_wp', 'root', 'root');
-	$reponse = $wpdb->query('SELECT * FROM wp_options');	
-	echo ('<table class="table">');
-	echo ('<tr>');
+    $wpdb->exec("SET CHARACTER SET utf8");
+	$reponse = $wpdb->query("SELECT * FROM wp_options WHERE option_name = 'list_equipe'");
+	echo ('<table class="table table-striped">');
+	echo ('<thead><tr>');
 	echo ('<th>Joueur</th>');
 	echo ('<th>Equipe</th>');
-	echo ('<tr>');
-	while ($donne = $reponse->fetch())
-		{
-			echo ('<tr><td>'.$donne['option_name'].'</td><td>'.$donne['option_value'].'</td>');
-		}
+	echo ('<tr></thead>');
+    $donne = $reponse->fetch(PDO::FETCH_ASSOC);
+    $listEquipe = json_decode($donne['option_value'], true);
+    $sizeListEquipe = sizeof($listEquipe);
+    echo ('<tbody>');
+    for ($i = 0; $i < $sizeListEquipe; $i++) {
+        echo ('<tr><td>'.$listEquipe[$i]['playerName'].'</td><td>'.$listEquipe[$i]['playerTeam'].'</td>');
+    }
+    echo ('</tbody>');
 	echo ('</table>');
 }
 
 function usecurl ($q, $camp)
 {
 	// Connection à la base de donnée
-	global $wpdb;
+	/*global $wpdb;
 	$wpdb = new PDO('mysql:host=localhost;dbname=bd_worldcup_wp', 'root', 'root');
 	//on regarde si la requete a deja etait rentrer une fois
 	$id_req = "";
@@ -52,7 +57,7 @@ function usecurl ($q, $camp)
 					'libelle_c' => $camp
 						));
 		
-	}
+	}*/
 	//si on a pas choisit parmit les campagne deja existante on rentre la nouvel campagne et recupere son id
 	/*if ($camp2 == "")
 	{
@@ -66,7 +71,7 @@ function usecurl ($q, $camp)
 					
 							
 				
-	mysql_close($sql_bdd);
+	//mysql_close($sql_bdd);
 			
 		
 	
